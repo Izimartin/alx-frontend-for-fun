@@ -2,42 +2,136 @@
 '''
 A script that codes markdown to HTML
 '''
-import sys
 import os
+import sys
 import re
 
-if __name__ == '__main__':
+if len(sys.argv) == 1:
+    sys.exit(1)
 
-    # Test that the number of arguments passed is 2
-    if len(sys.argv[1:]) != 2:
-        print('Usage: ./markdown2html.py README.md README.html',
-              file=sys.stderr)
-        sys.exit(1)
+if not os.path.isfile(sys.argv[1]):
+    sys.exit(2)
 
-    # Store the arguments into variables
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+ifile = sys.argv[1]
+ofile = re.sub('\.(md|markdown)$', '', ifile)+'.html'
 
-    # Checks that the markdown file exists and is a file
-    if not (os.path.exists(input_file) and os.path.isfile(input_file)):
-        print(f'Missing {input_file}', file=sys.stderr)
-        sys.exit(1)
+ifile = open(ifile, 'r') ; ifile_str = ifile.read() + '\n '
+ofile = open(ofile, 'w') ; ofile_str = ''
 
-    with open(input_file, encoding='utf-8') as file_1:
-        html_content = []
-        md_content = [line[:-1] for line in file_1.readlines()]
-        for line in md_content:
-            heading = re.split(r'#{1,6} ', line)
-            if len(heading) > 1:
-                # Compute the number of the # present to
-                # determine heading level
-                h_level = len(line[:line.find(heading[1])-1])
-                # Append the html equivalent of the heading
-                html_content.append(
-                    f'<h{h_level}>{heading[1]}</h{h_level}>\n'
-                )
+B = False
+I = False
+S = False
+c = False
+C = False
+Q = 0
+p = False
+i = 0
+
+while i < len(ifile_str)-2:
+    ch = ifile_str[i]
+    i += 1
+
+    if ch != '\n' and not p:
+        ofile.write('<p>')
+        p = True
+
+    if ch in ('*', '_'):
+        if C:
+            ofile.write(ch)
+            continue
+        if ifile_str[i] in ('*', '_'):
+            ofile.write(f'<{"/"*B}b>')
+            B = not B
+            i += 1
+        else:
+            ofile.write(f'<{"/"*I}i>')
+            I = not I
+
+    elif ch == '`':
+        ch_b, ch_c = ifile_str[i], ifile_str[i+1]
+        if ch == ch_b == ch_c:
+            ofile.write(f'<{"/"*C}code>')
+            C = not C
+            i += 2
+        else:
+            if C:
+                ofile.write(ch)
+                continue
+            ofile.write(f'<{"/"*c}code>')
+            c = not c
+
+    elif ch == '~':
+        if C:
+            ofile.write(ch)
+            continue
+        if ifile_str[i] == '~':
+            ofile.write(f'<{"/"*S}del>')
+            S = not S
+            i += 1
+
+    elif ch in ('-', '*', '_'):
+        ch_b , ch_c = ifile_str[i], ifile_str[i+1]
+        if ((i > 1 and ifile_str[i-2] == '\n') or i == 1) and ifile_str[i+2] == '\n':
+            if ch == ch_b == ch_c:
+                if B:
+                    ofile.write(f'</b>')
+                    B = False
+                if I:
+                    ofile.write(f'</i>')
+                    I = False
+                if S:
+                    ofile.write(f'</del>')
+                    S = False
+                ofile.write('<hr>')
+
+    elif ch == '[':
+        if re.match('^\[.*\]\(.*(".*"|)\)$', ifile_str[i-1:].split(')',1)[0]+')'):
+            name = ''
+            link = ''
+            alt = ''
+            s = ifile_str[i:].split(')',1)[0]+')'
+            i += len(s)
+            name = s.split(']')[0]
+            link = s.split('(')[1].split(')')[0]
+            if '"' in link:
+                alt = link.split('"')[1].split('"')[0]
+                link = link.split('"')[0].strip()
+        ofile.write(f'<a href="{link}" title="{alt}">{name}</a>')
+
+
+    elif ch == '\n':
+        if C:
+            ofile.write(ch)
+            continue
+
+        if c:
+            ofile.write(f'</code>')
+
+        if not p:
+            ofile.write('<br>')
+        elif ifile_str[i] == '\n':
+            ofile.write('</p>\n')
+            p = False
+            i += 1
+
+            if B:
+                ofile.write(f'</b>')
+                B = False
+            if I:
+                ofile.write(f'</i>')
+                I = False
+            if S:
+                ofile.write(f'</del>')
+                S = False
+        elif not ifile_str[i]:
+            if p:
+                ofile.write('</p>\n')
             else:
-                html_content.append(line)
+                ofile.write('\n')
+        else:
+            ofile.write('<br>')
 
-    with open(output_file, 'w', encoding='utf-8') as file_2:
-        file_2.writelines(html_content)
+        ofile.write('\n')
+
+    else:
+        ofile.write(ch)
