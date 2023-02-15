@@ -1,137 +1,66 @@
 #!/usr/bin/python3
-'''
-A script that codes markdown to HTML
-'''
-import os
 import sys
-import re
+from os.path import exists
 
-if len(sys.argv) == 1:
-    sys.exit(1)
+"""A markdown to html file
+    Args:
+        Arg 1: Markdown file
+        Arg 2: output file name (HTML)
+    """
 
-if not os.path.isfile(sys.argv[1]):
-    sys.exit(2)
+markdownHeader = {'#': '<h1> </h1>', '##': '<h2> </h2>', '###': '<h3> </h3>',
+                  '####': '<h4> </h4>', '#####': '<h5> </h5>', '######': '<h6> </h6>'}
 
-ifile = sys.argv[1]
-ofile = re.sub('\.(md|markdown)$', '', ifile)+'.html'
+markdownList = {'-': '<li> </li>', '*': '<li> </li>'}
 
-ifile = open(ifile, 'r') ; ifile_str = ifile.read() + '\n '
-ofile = open(ofile, 'w') ; ofile_str = ''
+if __name__ == '__main__':
 
-B = False
-I = False
-S = False
-c = False
-C = False
-Q = 0
-p = False
-i = 0
+    """Check if number of arguments == 2"""
 
-while i < len(ifile_str)-2:
-    ch = ifile_str[i]
-    i += 1
+    if len(sys.argv) != 3:
+        sys.stderr.write("Usage: ./markdown2html.py README.md README.html\n")
+        exit(1)
 
-    if ch != '\n' and not p:
-        ofile.write('<p>')
-        p = True
+    """Check if input file is a correct markdown file"""
+    if "." in sys.argv[1]:
+        newArr = sys.argv[1].split('.')
+        if len(newArr) != 2:
+            sys.stderr.write('Bad Markdown file\n')
+            exit(1)
+        if newArr[1] != "md":
+            sys.stderr.write('First argument must a markdown file\n')
 
-    if ch in ('*', '_'):
-        if C:
-            ofile.write(ch)
-            continue
-        if ifile_str[i] in ('*', '_'):
-            ofile.write(f'<{"/"*B}b>')
-            B = not B
-            i += 1
-        else:
-            ofile.write(f'<{"/"*I}i>')
-            I = not I
+    """Check if markdown file exist"""
+    if exists(sys.argv[1]) == False:
+        sys.stderr.write('Missing {}\n'.format(sys.argv[1]))
+        exit(1)
 
-    elif ch == '`':
-        ch_b, ch_c = ifile_str[i], ifile_str[i+1]
-        if ch == ch_b == ch_c:
-            ofile.write(f'<{"/"*C}code>')
-            C = not C
-            i += 2
-        else:
-            if C:
-                ofile.write(ch)
-                continue
-            ofile.write(f'<{"/"*c}code>')
-            c = not c
+    """Opening the markdown file for file operations"""
+    ulCount = 0
+    with open(sys.argv[1]) as markdown:
+        line = True
 
-    elif ch == '~':
-        if C:
-            ofile.write(ch)
-            continue
-        if ifile_str[i] == '~':
-            ofile.write(f'<{"/"*S}del>')
-            S = not S
-            i += 1
+        while line:
+            line = markdown.readline()
+            if line.startswith('#'):  # Headings operation
+                hash = line.split(' ')[0]
 
-    elif ch in ('-', '*', '_'):
-        ch_b , ch_c = ifile_str[i], ifile_str[i+1]
-        if ((i > 1 and ifile_str[i-2] == '\n') or i == 1) and ifile_str[i+2] == '\n':
-            if ch == ch_b == ch_c:
-                if B:
-                    ofile.write(f'</b>')
-                    B = False
-                if I:
-                    ofile.write(f'</i>')
-                    I = False
-                if S:
-                    ofile.write(f'</del>')
-                    S = False
-                ofile.write('<hr>')
+                with open(sys.argv[2], 'a') as htmlFile:
+                    hashL = len(hash) + 1
+                    htmlFile.write('{}{}{}\n'.format(
+                        markdownHeader[hash].split(' ')[0], line[hashL: -1], markdownHeader[hash].split(' ')[1]))
 
-    elif ch == '[':
-        if re.match('^\[.*\]\(.*(".*"|)\)$', ifile_str[i-1:].split(')',1)[0]+')'):
-            name = ''
-            link = ''
-            alt = ''
-            s = ifile_str[i:].split(')',1)[0]+')'
-            i += len(s)
-            name = s.split(']')[0]
-            link = s.split('(')[1].split(')')[0]
-            if '"' in link:
-                alt = link.split('"')[1].split('"')[0]
-                link = link.split('"')[0].strip()
-        ofile.write(f'<a href="{link}" title="{alt}">{name}</a>')
+            if line.startswith('-'):  # Unordered list operation
+                with open(sys.argv[2], 'a') as htmlFile:
+                    if ulCount == 0:
+                        htmlFile.write('<ul>\n')
+                    else:
+                        htmlFile.write('\t{}{}{}\n'.format(
+                            markdownList['-'].split(' ')[0], line[2: -1], markdownList['-'].split(' ')[1]))
+                    ulCount += 1
 
-
-    elif ch == '\n':
-        if C:
-            ofile.write(ch)
-            continue
-
-        if c:
-            ofile.write(f'</code>')
-
-        if not p:
-            ofile.write('<br>')
-        elif ifile_str[i] == '\n':
-            ofile.write('</p>\n')
-            p = False
-            i += 1
-
-            if B:
-                ofile.write(f'</b>')
-                B = False
-            if I:
-                ofile.write(f'</i>')
-                I = False
-            if S:
-                ofile.write(f'</del>')
-                S = False
-        elif not ifile_str[i]:
-            if p:
-                ofile.write('</p>\n')
             else:
-                ofile.write('\n')
-        else:
-            ofile.write('<br>')
+                with open(sys.argv[2], 'a') as htmlFile:
+                    htmlFile.write(line)
 
-        ofile.write('\n')
-
-    else:
-        ofile.write(ch)
+    exit(0)
