@@ -1,0 +1,66 @@
+:root {
+  --holberton-red: #ab1c3d;
+  --background-grey: #ebebeb;
+}
+
+body {
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+}
+
+.toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.toggle-inner {
+  cursor: pointer;
+  width: 16rem;
+  height: 4.2rem;
+  background: var(--background-grey);
+  display: flex;
+  align-items: center;
+  border-radius: 10rem;
+  position: relative;
+  border: 2px solid #c2bcbc;
+}
+
+.toggle-switch {
+  position: relative;
+  top: -5em;
+  left: -4.4px;
+  width: 5.5rem;
+  height: 5.5rem;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.3s;
+  border: 2px solid #c2bcbc;
+}
+
+.toggle-cb:checked ~ .toggle-label .toggle-switch {
+  left: 11em;
+  transition: 1s ease-in-out;
+}
+
+input.toggle-cb:checked ~ .toggle-label .toggle-inner {
+  background-color: var(--holberton-red);
+}
+
+.toggle-inner::before {
+  content: "NO";
+  position: relative;
+  font-size: 3rem;
+  left: 7rem;
+  color: #c3c4cf;
+}
+
+input.toggle-cb:checked ~ .toggle-label .toggle-inner::before {
+  content: "YES";
+  margin: -2rem;
+}
+
+input[type="checkbox"] {
+  display: none;
+}
