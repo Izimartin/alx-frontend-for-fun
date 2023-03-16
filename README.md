@@ -1,3 +1,3 @@
 # Fun-with-CSS
 
-Alx repo
+Alx repo directory
